@@ -1,0 +1,19 @@
+{
+  "sqltools.connections": [
+    {
+      "mysqlOptions": {
+        "authProtocol": "default",
+        "enableSsl": "Disabled"
+      },
+      "previewLimit": 50,
+      "server": "localhost",
+      "port": 3306,
+      "driver": "MySQL",
+      "name": "vavuniya_ads",
+      "database": "vavuniya_ads",
+      "username": "root",
+      "password": ""
+    }
+  ],
+  "postman.settings.dotenv-detection-notification-visibility": false
+}
