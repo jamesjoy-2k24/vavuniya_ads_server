@@ -1,10 +1,9 @@
 <?php
-require_once 'routes.php';
 require_once 'response.php';
+require_once 'routes.php';
 
 function handleRequest($url, $method)
     {
-    // Remove 'api/' prefix and split URL
     $basePath = 'api/';
     if (strpos($url, $basePath) === 0) {
         $url = substr($url, strlen($basePath));

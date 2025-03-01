@@ -6,6 +6,7 @@ require_once 'config/database.php';
 const SELECT_COUNT_BY_PHONE = "SELECT COUNT(*) as attempts FROM otp_attempts WHERE phone = ? AND created_at > NOW() - INTERVAL ? SECOND";
 const SELECT_COUNT_BY_IP    = "SELECT COUNT(*) as attempts FROM otp_attempts WHERE ip_address = ? AND created_at > NOW() - INTERVAL ? SECOND";
 
+// Rate limit check
 function checkRateLimit($phone)
     {
     $conn   = getDbConnection();
