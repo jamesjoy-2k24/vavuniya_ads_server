@@ -5,11 +5,12 @@ require_once 'includes/functions.php';
 
 header('Content-Type: application/json');
 
+// Sanitize and validate inputs
 $data = json_decode(file_get_contents('php://input'), true);
 validateInput($data, ['phone', 'password']);
+
 $phone    = trim($data['phone']);
 $password = trim($data['password']);
-
 
 checkRateLimit($phone);
 
@@ -17,7 +18,7 @@ $conn = getDbConnection();
 $conn->begin_transaction();
 
 try {
-    // Check if user exists
+    // Fetch user
     $stmt = $conn->prepare("SELECT id, password FROM users WHERE phone = ?");
     $stmt->bind_param('s', $phone);
     $stmt->execute();
@@ -34,13 +35,17 @@ try {
         throw new Exception('Invalid password');
         }
 
-    $conn->commit();
     $token = generateJwt($user['id']);
-    respond(['message' => 'Login successful', 'user_id' => $user['id'], 'token' => $token]);
+    $conn->commit();
+    respond([
+        'message' => 'Login successful',
+        'user_id' => $user['id'],
+        'token'   => $token,
+    ]);
     }
 catch (Exception $e) {
     $conn->rollback();
-    error_log("Login Error: " . $e->getMessage());
+    error_log("Login Error: " . $e->getMessage() . " | Phone: $phone");
     respond(['error' => $e->getMessage()], $e->getCode() ?: 401);
     } finally {
     $conn->close();

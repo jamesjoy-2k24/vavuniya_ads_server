@@ -10,5 +10,7 @@ function getDbConnection()
     if ($conn->connect_error) {
         die(json_encode(['error' => 'Database connection failed: ' . $conn->connect_error]));
         }
+    // Enable error reporting for debugging
+    $conn->report_mode = MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT;
     return $conn;
     }
