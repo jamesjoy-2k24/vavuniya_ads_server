@@ -1,5 +1,13 @@
 USE vavuniya_ads;
-ALTER TABLE otp_attempts ADD COLUMN ip_address VARCHAR(45) DEFAULT NULL;
+
+-- ALTER TABLE ads ADD COLUMN is_verified BOOLEAN DEFAULT FALSE;
+
+-- INSERT INTO categories (name) VALUES ('Electronics'), ('Vehicles');
+-- INSERT INTO ads (title, description, price, images, location, status, user_id, category_id, item_condition)
+-- VALUES ('Phone', 'New iPhone', 1000, '["img1.jpg"]', 'Colombo', 'active', 1, 1, 'new');
+
+-- ALTER TABLE otp_attempts ADD COLUMN ip_address VARCHAR(45) DEFAULT NULL;
+-- ALTER TABLE favorites ADD COLUMN ip_address VARCHAR(45) DEFAULT NULL;
 
 -- -- Users Table
 -- CREATE TABLE IF NOT EXISTS users (
@@ -80,13 +88,15 @@ ALTER TABLE otp_attempts ADD COLUMN ip_address VARCHAR(45) DEFAULT NULL;
 -- );
 
 -- -- Favorites Table
--- CREATE TABLE IF NOT EXISTS favorites (
---     user_id INT,
---     ad_id INT,
---     PRIMARY KEY (user_id, ad_id),
---     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
---     FOREIGN KEY (ad_id) REFERENCES ads(id) ON DELETE CASCADE
--- );
+CREATE TABLE IF NOT EXISTS favorites (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL,
+    ad_id INT NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (ad_id) REFERENCES ads(id) ON DELETE CASCADE,
+    UNIQUE KEY unique_favorite (user_id, ad_id)
+);
 
 -- -- Messages Table
 -- CREATE TABLE IF NOT EXISTS messages (
