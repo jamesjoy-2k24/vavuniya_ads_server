@@ -1,13 +1,16 @@
 USE vavuniya_ads;
 
+-- Ads (Vavuniya-specific scenarios)
+INSERT INTO ads (title, description, price, images, location, status, user_id, category_id, item_condition, is_featured, created_at) VALUES
+('Used Laptop for Sale', 'Dell laptop, good for students', 45000.00, '["laptop1.jpg"]', 'Vavuniya Town', 'active', 1, 1, 'used', FALSE, '2025-03-01 08:00:00'),
+('Motorbike - Yamaha', 'Well-maintained bike, perfect for Vavuniya roads', 250000.00, '["bike1.jpg", "bike2.jpg"]', 'Pampaimadu, Vavuniya', 'active', 2, 2, 'used', TRUE, '2025-03-02 10:30:00'),
+('Wooden Table', 'Handmade table from local carpenter', 15000.00, '["table1.jpg"]', 'Nelukulam, Vavuniya', 'pending', 3, 3, 'new', FALSE, '2025-03-03 14:00:00'),
+('Tamil Novels Set', 'Collection of 5 novels', 2000.00, '["books1.jpg"]', 'Vavuniya Town', 'sold', 1, 4, 'used', FALSE, '2025-03-04 09:15:00'),
+('Tuition Classes', 'Maths tuition for O/L students', 1000.00, '[]', 'Kanagarayankulam, Vavuniya', 'active', 2, 5, 'new', FALSE, '2025-03-05 16:00:00'),
+('Broken Phone', 'Samsung phone, needs repair', 5000.00, '["phone1.jpg"]', 'Vavuniya Town', 'active', 3, 1, 'used', FALSE, '2025-03-06 11:00:00'),
+('Expensive Car', 'Toyota Corolla, luxury deal', 5000000.00, '["car1.jpg"]', 'Vavuniya Town', 'deleted', 1, 2, 'used', TRUE, '2025-03-07 13:45:00');
+
 -- ALTER TABLE ads ADD COLUMN is_verified BOOLEAN DEFAULT FALSE;
-
--- INSERT INTO categories (name) VALUES ('Electronics'), ('Vehicles');
--- INSERT INTO ads (title, description, price, images, location, status, user_id, category_id, item_condition)
--- VALUES ('Phone', 'New iPhone', 1000, '["img1.jpg"]', 'Colombo', 'active', 1, 1, 'new');
-
--- ALTER TABLE otp_attempts ADD COLUMN ip_address VARCHAR(45) DEFAULT NULL;
--- ALTER TABLE favorites ADD COLUMN ip_address VARCHAR(45) DEFAULT NULL;
 
 -- -- Users Table
 -- CREATE TABLE IF NOT EXISTS users (
@@ -88,15 +91,15 @@ USE vavuniya_ads;
 -- );
 
 -- -- Favorites Table
-CREATE TABLE IF NOT EXISTS favorites (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    user_id INT NOT NULL,
-    ad_id INT NOT NULL,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
-    FOREIGN KEY (ad_id) REFERENCES ads(id) ON DELETE CASCADE,
-    UNIQUE KEY unique_favorite (user_id, ad_id)
-);
+-- CREATE TABLE IF NOT EXISTS favorites (
+--     id INT AUTO_INCREMENT PRIMARY KEY,
+--     user_id INT NOT NULL,
+--     ad_id INT NOT NULL,
+--     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+--     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+--     FOREIGN KEY (ad_id) REFERENCES ads(id) ON DELETE CASCADE,
+--     UNIQUE KEY unique_favorite (user_id, ad_id)
+-- );
 
 -- -- Messages Table
 -- CREATE TABLE IF NOT EXISTS messages (

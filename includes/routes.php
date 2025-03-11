@@ -14,14 +14,14 @@ function getRoutes()
             'list'   => ['POST', 'api/ads/list.php'],
             'show'   => ['POST', 'api/ads/show.php'],
             'create' => ['POST', 'api/ads/create.php'],
-            'update' => ['POST', 'api/ads/update.php'],
+            'update' => ['PUT', 'api/ads/update.php'],
             'delete' => ['DELETE', 'api/ads/delete.php'],
         ],
         'categories' => [
-            'list'   => ['GET', 'api/categories/list.php'],
-            'show'   => ['GET', 'api/categories/show.php'],
+            'list'   => ['POST', 'api/categories/list.php'],
+            'show'   => ['POST', 'api/categories/show.php'],
             'create' => ['POST', 'api/categories/create.php'],
-            'update' => ['POST', 'api/categories/update.php'],
+            'update' => ['PUT', 'api/categories/update.php'],
             'delete' => ['DELETE', 'api/categories/delete.php'],
         ]
     ];
