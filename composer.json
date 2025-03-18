@@ -1,0 +1,22 @@
+{
+  "name": "vavuniya_ads/vavuniya_ads",
+  "description": "A project for Vavuniya Ads",
+  "type": "project",
+  "require": {
+    "php": ">=7.4",
+    "vlucas/phpdotenv": "^5.5"
+  },
+  "autoload": {
+    "psr-4": {
+      "VavuniyaAds\\": "includes/"
+    }
+  },
+  "authors": [
+    {
+      "name": "James Joy",
+      "email": "joyjames2k24@gmail.com"
+    }
+  ],
+  "minimum-stability": "stable",
+  "license": "MIT"
+}

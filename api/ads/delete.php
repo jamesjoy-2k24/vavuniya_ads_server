@@ -70,12 +70,12 @@ try {
         throw new Exception('No ad was deleted', 404);
         }
 
-    respond(['message' => 'Ad deleted successfully'], 200);
+    sendResponse(['message' => 'Ad deleted successfully'], 200);
 
     }
 catch (Exception $e) {
     error_log("Ad Delete Error: " . $e->getMessage() . " | Ad ID: " . ($ad_id ?? 'unknown'));
-    respond(['error' => $e->getMessage()], $e->getCode() ?: 400);
+    sendResponse(['error' => $e->getMessage()], $e->getCode() ?: 400);
     } finally {
     if (isset($stmt)) {
         $stmt->close();

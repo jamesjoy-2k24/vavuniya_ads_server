@@ -14,11 +14,11 @@ try {
         throw new Exception('Execute failed: ' . $stmt->error);
     $categories = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
 
-    respond(['status' => 'success', 'data' => $categories]);
+    sendResponse(['status' => 'success', 'data' => $categories]);
     }
 catch (Exception $e) {
     error_log("Categories List Error: " . $e->getMessage());
-    respond(['status' => 'error', 'message' => $e->getMessage()], 500);
+    sendResponse(['status' => 'error', 'message' => $e->getMessage()], 500);
     } finally {
     $conn->close();
     }

@@ -32,13 +32,13 @@ try {
     // Decode JSON images field
     $ad['images'] = json_decode($ad['images'], true) ?: [];
 
-    // Respond with ad details directly
-    respond($ad, 200);
+    // sendResponse with ad details directly
+    sendResponse($ad, 200);
 
     }
 catch (Exception $e) {
     error_log("Ad Show Error: " . $e->getMessage() . " | Ad ID: " . ($ad_id ?? 'unknown'));
-    respond(['error' => $e->getMessage()], $e->getCode() ?: 404);
+    sendResponse(['error' => $e->getMessage()], $e->getCode() ?: 404);
     } finally {
     if (isset($stmt)) {
         $stmt->close();

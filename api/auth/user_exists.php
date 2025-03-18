@@ -17,11 +17,11 @@ try {
     $result = $stmt->get_result();
     $exists = $result->num_rows > 0;
 
-    respond(['exists' => $exists]);
+    sendResponse(['exists' => $exists]);
     }
 catch (Exception $e) {
     error_log("User Exists Check Error: " . $e->getMessage());
-    respond(['error' => 'Failed to check user existence'], 500);
+    sendResponse(['error' => 'Failed to check user existence'], 500);
     } finally {
     $conn->close();
     }

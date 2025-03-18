@@ -156,13 +156,13 @@ try {
         }
 
     $conn->commit();
-    respond(['message' => 'Ad updated successfully'], 200);
+    sendResponse(['message' => 'Ad updated successfully'], 200);
 
     }
 catch (Exception $e) {
     $conn->rollback();
     error_log("Ad Update Error: " . $e->getMessage() . " | Ad ID: " . ($ad_id ?? 'unknown'));
-    respond(['error' => $e->getMessage()], $e->getCode() ?: 400);
+    sendResponse(['error' => $e->getMessage()], $e->getCode() ?: 400);
     } finally {
     if (isset($stmt)) {
         $stmt->close();

@@ -40,11 +40,11 @@ try {
         }
 
     $category_id = $conn->insert_id;
-    respond(['status' => 'success', 'message' => 'Category created', 'category_id' => $category_id], 201);
+    sendResponse(['status' => 'success', 'message' => 'Category created', 'category_id' => $category_id], 201);
     }
 catch (Exception $e) {
     error_log("Category Create Error: " . $e->getMessage());
-    respond(['status' => 'error', 'message' => $e->getMessage()], 400);
+    sendResponse(['status' => 'error', 'message' => $e->getMessage()], 400);
     } finally {
     $conn->close();
     }

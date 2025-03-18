@@ -67,7 +67,7 @@ try {
         }
 
     // Build response
-    respond([
+    sendResponse([
         'status'      => 'success',
         'message'     => $message,
         'is_favorite' => $isFavorite
@@ -75,7 +75,7 @@ try {
     }
 catch (Exception $e) {
     error_log("Favorites Toggle Error: " . $e->getMessage());
-    respond(['status' => 'error', 'message' => $e->getMessage()], 400); // 400 for bad input, adjust as needed
+    sendResponse(['status' => 'error', 'message' => $e->getMessage()], 400); // 400 for bad input, adjust as needed
     } finally {
     $conn->close();
     }

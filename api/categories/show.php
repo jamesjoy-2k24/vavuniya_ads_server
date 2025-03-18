@@ -21,11 +21,11 @@ try {
 
     if (!$category)
         throw new Exception('Category not found');
-    respond(['status' => 'success', 'data' => $category]);
+    sendResponse(['status' => 'success', 'data' => $category]);
     }
 catch (Exception $e) {
     error_log("Category Show Error: " . $e->getMessage());
-    respond(['status' => 'error', 'message' => $e->getMessage()], 404);
+    sendResponse(['status' => 'error', 'message' => $e->getMessage()], 404);
     } finally {
     $conn->close();
     }

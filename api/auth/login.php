@@ -37,7 +37,7 @@ try {
 
     $token = generateJwt($user['id']);
     $conn->commit();
-    respond([
+    sendResponse([
         'message' => 'Login successful',
         'user_id' => $user['id'],
         'token'   => $token,
@@ -46,7 +46,7 @@ try {
 catch (Exception $e) {
     $conn->rollback();
     error_log("Login Error: " . $e->getMessage() . " | Phone: $phone");
-    respond(['error' => $e->getMessage()], $e->getCode() ?: 401);
+    sendResponse(['error' => $e->getMessage()], $e->getCode() ?: 401);
     } finally {
     $conn->close();
     }

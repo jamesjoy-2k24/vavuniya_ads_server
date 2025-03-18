@@ -1,69 +1,64 @@
 <?php
-require_once 'config/database.php';
-require_once 'includes/security.php';
-require_once 'includes/functions.php';
+// api/auth/send_otp.php
+require_once __DIR__ . '/../../config/database.php';
+require_once __DIR__ . '/../../includes/security.php';
+require_once __DIR__ . '/../../includes/functions.php';
 
-header('Content-Type: application/json');
+header('Content-Type: application/json; charset=UTF-8');
 
-// Queries
 const INSERT_OTP         = "INSERT INTO otp (phone, code, expires_at) VALUES (?, ?, ?)";
-const INSERT_OTP_ATTEMPT = "INSERT INTO otp_attempts (phone, attempt_type, status, ip_address) VALUES (?, 'phone', ?, ?)";
+const UPDATE_OTP_ATTEMPT = "UPDATE otp_attempts SET status = ? WHERE phone = ? AND ip_address = ? AND status = 'pending' ORDER BY created_at DESC LIMIT 1";
 
-// Get and validate request data
+// Get and validate input
 $data  = json_decode(file_get_contents('php://input'), true);
-$data  = validateInput($data, ['phone']); // Use sanitized data
+$data  = validateInput($data, ['phone']);
 $phone = $data['phone'];
 
-checkRateLimit($phone); // Sets $GLOBALS['current_ip']
-
+$ip   = checkRateLimit($phone);
 $conn = getDbConnection();
 $conn->begin_transaction();
 
 try {
     // Generate OTP and expiration
     $code      = generateOtp();
-    $expiresAt = $conn->query("SELECT NOW() + INTERVAL 10 MINUTE AS expires_at")
-        ->fetch_assoc()['expires_at']; // Use MySQL time
+    $expiresAt = date('Y-m-d H:i:s', strtotime('+10 minutes'));
 
     // Insert OTP
     $stmt = $conn->prepare(INSERT_OTP);
-    if (!$stmt)
-        throw new Exception('Prepare failed: ' . $conn->error);
+    if (!$stmt) {
+        throw new Exception('Database prepare error', 500);
+        }
     $stmt->bind_param('sss', $phone, $code, $expiresAt);
-    if (!$stmt->execute())
-        throw new Exception('Execute failed: ' . $stmt->error);
-    if ($stmt->affected_rows !== 1)
-        throw new Exception('No OTP inserted');
+    if (!$stmt->execute() || $stmt->affected_rows !== 1) {
+        throw new Exception('OTP insertion failed', 500);
+        }
 
-    // Log attempt
-    $stmt = $conn->prepare(INSERT_OTP_ATTEMPT);
-    if (!$stmt)
-        throw new Exception('Prepare failed: ' . $conn->error);
+    // Update attempt status to 'success'
+    $stmt = $conn->prepare(UPDATE_OTP_ATTEMPT);
+    if (!$stmt) {
+        throw new Exception('Database prepare error', 500);
+        }
     $status = 'success';
-    $ip     = $GLOBALS['current_ip'] ?? $_SERVER['REMOTE_ADDR'] ?? 'unknown'; // Fallback IP
-    $stmt->bind_param('sss', $phone, $status, $ip);
-    if (!$stmt->execute())
-        throw new Exception('Execute failed: ' . $stmt->error);
-    if ($stmt->affected_rows !== 1)
-        throw new Exception('No attempt logged');
+    $stmt->bind_param('sss', $status, $phone, $ip);
+    $stmt->execute();
 
     $conn->commit();
-    error_log("OTP generated successfully: Phone=$phone, Code=$code, IP=$ip");
-    respond(['message' => 'OTP generated successfully', 'otp' => $code]);
+    error_log("OTP sent: Phone=$phone, Code=$code, IP=$ip");
+    sendResponse(['message' => 'OTP sent successfully', 'otp' => $code]);
     }
 catch (Exception $e) {
     $conn->rollback();
 
-    $stmt = $conn->prepare(INSERT_OTP_ATTEMPT);
-    if ($stmt) { // Only attempt logging if prepare succeeds
+    // Update attempt status to 'failed'
+    $stmt = $conn->prepare(UPDATE_OTP_ATTEMPT);
+    if ($stmt) {
         $status = 'failed';
-        $ip     = $GLOBALS['current_ip'] ?? $_SERVER['REMOTE_ADDR'] ?? 'unknown';
-        $stmt->bind_param('sss', $phone, $status, $ip);
+        $stmt->bind_param('sss', $status, $phone, $ip);
         $stmt->execute();
         }
 
     error_log("Send OTP Error: " . $e->getMessage() . " | Phone: $phone");
-    respond(['error' => 'Failed to generate OTP', 'details' => $e->getMessage()], 500);
+    sendResponse(['error' => 'Failed to send OTP'], 500);
     } finally {
     $conn->close();
     }

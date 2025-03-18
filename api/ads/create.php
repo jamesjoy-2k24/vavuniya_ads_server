@@ -75,12 +75,12 @@ try {
         }
 
     $ad_id = $conn->insert_id;
-    respond(['message' => 'Ad created successfully', 'ad_id' => $ad_id], 201);
+    sendResponse(['message' => 'Ad created successfully', 'ad_id' => $ad_id], 201);
 
     }
 catch (Exception $e) {
     error_log("Ad Create Error: " . $e->getMessage());
-    respond(['error' => $e->getMessage()], $e->getCode() ?: 400);
+    sendResponse(['error' => $e->getMessage()], $e->getCode() ?: 400);
     } finally {
     if (isset($stmt))
         $stmt->close();

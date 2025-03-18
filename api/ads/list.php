@@ -108,7 +108,7 @@ try {
     $conn->commit();
 
     // Build response matching HomeController expectations
-    respond([
+    sendResponse([
         'ads'        => $ads,
         'categories' => $categories,
         'has_more'   => count($ads) == $limit,
@@ -121,7 +121,7 @@ try {
 catch (Exception $e) {
     $conn->rollback();
     error_log("Ad List Error: " . $e->getMessage());
-    respond(['error' => $e->getMessage()], $e->getCode() ?: 500);
+    sendResponse(['error' => $e->getMessage()], $e->getCode() ?: 500);
     } finally {
     if (isset($ads_stmt))
         $ads_stmt->close();
