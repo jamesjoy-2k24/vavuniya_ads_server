@@ -1,16 +1,16 @@
 <?php
-// api/auth/verify_otp.php
 require_once __DIR__ . '/../../config/database.php';
 require_once __DIR__ . '/../../includes/functions.php';
 require_once __DIR__ . '/../../includes/security.php';
 
 header('Content-Type: application/json; charset=UTF-8');
 
-const SELECT_OTP         = "SELECT id FROM otp WHERE phone = ? AND code = ? AND expires_at > NOW() AND used = 0";
-const UPDATE_OTP         = "UPDATE otp SET used = 1 WHERE id = ?";
-const DELETE_OTP         = "DELETE FROM otp WHERE phone = ? AND (expires_at <= NOW() OR used = 1) AND id != ?";
-const SELECT_USER        = "SELECT id FROM users WHERE phone = ?";
-const UPDATE_OTP_ATTEMPT = "UPDATE otp_attempts SET status = ? WHERE phone = ? AND ip_address = ? AND status = 'pending' ORDER BY created_at DESC LIMIT 1";
+const SELECT_OTP          = "SELECT id FROM otp WHERE phone = ? AND code = ? AND expires_at > NOW() AND used = 0";
+const UPDATE_OTP          = "UPDATE otp SET used = 1 WHERE id = ?";
+const SELECT_USER         = "SELECT id FROM users WHERE phone = ?";
+const DELETE_ALL_OTP      = "DELETE FROM otp WHERE phone = ?";
+const DELETE_ALL_ATTEMPTS = "DELETE FROM otp_attempts WHERE phone = ?";
+const UPDATE_OTP_ATTEMPT  = "UPDATE otp_attempts SET status = ? WHERE phone = ? AND ip_address = ? AND status = 'pending' ORDER BY created_at DESC LIMIT 1";
 
 // Get and validate input
 $data  = json_decode(file_get_contents('php://input'), true);
@@ -18,7 +18,7 @@ $data  = validateInput($data, ['phone', 'code']);
 $phone = $data['phone'];
 $code  = $data['code'];
 
-$ip   = checkRateLimit($phone); // Inserts attempt with 'pending'
+$ip   = checkRateLimit($phone);
 $conn = getDbConnection();
 $conn->begin_transaction();
 
@@ -46,12 +46,17 @@ try {
         throw new Exception('Failed to update OTP', 500);
         }
 
-    // Clean up old OTPs
-    $stmt = $conn->prepare(DELETE_OTP);
-    if (!$stmt) {
+    // Clean up: Delete all OTPs and attempts for this phone
+    $stmt = $conn->prepare(DELETE_ALL_OTP);
+    if (!$stmt)
         throw new Exception('Database error', 500);
-        }
-    $stmt->bind_param('si', $phone, $otpId);
+    $stmt->bind_param('s', $phone);
+    $stmt->execute();
+
+    $stmt = $conn->prepare(DELETE_ALL_ATTEMPTS);
+    if (!$stmt)
+        throw new Exception('Database error', 500);
+    $stmt->bind_param('s', $phone);
     $stmt->execute();
 
     // Update attempt status to 'success'

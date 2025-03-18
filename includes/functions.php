@@ -127,9 +127,12 @@ function verifyJwt($token)
 function getAuthorizationHeader(): ?string
     {
     if (isset($_SERVER['HTTP_AUTHORIZATION'])) {
-        return trim($_SERVER['HTTP_AUTHORIZATION']);
+        return $_SERVER['HTTP_AUTHORIZATION'];
         }
-    if (function_exists('apache_request_headers')) {
+    elseif (isset($_SERVER['REDIRECT_HTTP_AUTHORIZATION'])) {
+        return $_SERVER['REDIRECT_HTTP_AUTHORIZATION'];
+        }
+    elseif (function_exists('apache_request_headers')) {
         $headers = apache_request_headers();
         return $headers['Authorization'] ?? $headers['authorization'] ?? null;
         }

@@ -1,168 +1,153 @@
 <?php
-require_once 'config/database.php';
-require_once 'includes/functions.php';
+// api/ads/update.php
+require_once __DIR__ . '/../../config/database.php';
+require_once __DIR__ . '/../../includes/functions.php';
 
-header('Content-Type: application/json');
+header('Content-Type: application/json; charset=UTF-8');
 
-// Database connection
+const SELECT_AD      = "SELECT title, description, price, images, location, status, category_id, item_condition, is_featured FROM ads WHERE id = ? AND user_id = ?";
+const UPDATE_AD      = "UPDATE ads SET title = ?, description = ?, price = ?, images = ?, location = ?, status = ?, category_id = ?, item_condition = ?, is_featured = ? WHERE id = ? AND user_id = ?";
+const CHECK_CATEGORY = "SELECT id FROM categories WHERE id = ?";
+
+// User ID from JWT (set by router.php)
+$userId = $GLOBALS['user_id'];
+
 $conn = getDbConnection();
 $conn->begin_transaction();
 
 try {
-    // Extract and verify JWT
-    $token = null;
-    if (isset($_SERVER['HTTP_AUTHORIZATION'])) {
-        $token = $_SERVER['HTTP_AUTHORIZATION'];
-        }
-    elseif (isset($_SERVER['REDIRECT_HTTP_AUTHORIZATION'])) {
-        $token = $_SERVER['REDIRECT_HTTP_AUTHORIZATION'];
-        }
-    elseif (function_exists('apache_request_headers')) {
-        $headers = apache_request_headers();
-        $token   = $headers['Authorization'] ?? $headers['authorization'] ?? null;
-        }
+    // Get and validate input
+    $data = getInputData();
 
-    if (!$token || !preg_match('/Bearer\s(\S+)/', $token, $matches)) {
-        throw new Exception('Authentication required', 401);
-        }
-    $jwt_user_id = verifyJwt($matches[1]);
+    // Required field: ad ID
+    $requiredFields = ['id'];
+    $optionalFields = [
+        'title'          => null,
+        'description'    => null,
+        'price'          => null,
+        'images'         => null,
+        'location'       => null,
+        'status'         => null,
+        'category_id'    => null,
+        'item_condition' => null,
+        'is_featured'    => null
+    ];
 
-    // Parse and validate input
-    $data = json_decode(file_get_contents('php://input'), true);
-    if (!$data || !isset($data['id'])) {
-        throw new Exception('Missing ad ID', 400);
-        }
+    $sanitizedData = validateInput($data, $requiredFields, $optionalFields);
+    $adId          = (int) $sanitizedData['id'];
 
-    $ad_id = filter_var($data['id'], FILTER_VALIDATE_INT);
-    if ($ad_id === false || $ad_id <= 0) {
-        throw new Exception('Invalid ad ID', 400);
-        }
-
-    // Check ownership
-    $stmt = $conn->prepare("SELECT user_id FROM ads WHERE id = ? AND status != 'deleted'");
+    // Fetch current ad data
+    $stmt = $conn->prepare(SELECT_AD);
     if (!$stmt) {
-        throw new Exception('Prepare failed: ' . $conn->error, 500);
+        throw new Exception('Database error', 500);
         }
-    $stmt->bind_param('i', $ad_id);
+    $stmt->bind_param('ii', $adId, $userId);
     $stmt->execute();
-    $ad = $stmt->get_result()->fetch_assoc();
-    if (!$ad) {
-        throw new Exception('Ad not found', 404);
+    $result = $stmt->get_result();
+    if ($result->num_rows === 0) {
+        throw new Exception('Ad not found or you do not have permission to update it', 404);
         }
-    if ($ad['user_id'] !== $jwt_user_id) {
-        throw new Exception('Unauthorized: You do not own this ad', 403);
+    $currentAd = $result->fetch_assoc();
+    $stmt->close();
+
+    // Merge current data with provided data
+    $title         = $sanitizedData['title'] ?? $currentAd['title'];
+    $description   = $sanitizedData['description'] ?? $currentAd['description'];
+    $price         = $sanitizedData['price'] !== null ? (float) $sanitizedData['price'] : $currentAd['price'];
+    $images        = $sanitizedData['images'] !== null ? json_encode($sanitizedData['images']) : $currentAd['images'];
+    $location      = $sanitizedData['location'] ?? $currentAd['location'];
+    $status        = $sanitizedData['status'] ?? $currentAd['status'];
+    $categoryId    = $sanitizedData['category_id'] !== null ? (int) $sanitizedData['category_id'] : $currentAd['category_id'];
+    $itemCondition = $sanitizedData['item_condition'] ?? $currentAd['item_condition'];
+    $isFeatured    = $sanitizedData['is_featured'] !== null ? (bool) $sanitizedData['is_featured'] : $currentAd['is_featured'];
+
+    // Validate status if provided
+    if ($sanitizedData['status'] !== null && !in_array($status, ['active', 'pending', 'sold', 'deleted'])) {
+        throw new Exception('Invalid status. Must be "active", "pending", "sold", or "deleted".', 400);
         }
 
-    // Validate and sanitize optional fields
-    $updates = [];
-    $params  = [];
-    $types   = '';
+    // Validate item_condition if provided
+    if ($sanitizedData['item_condition'] !== null && !in_array($itemCondition, ['new', 'used'])) {
+        throw new Exception('Invalid item_condition. Must be "new" or "used".', 400);
+        }
 
-    if (isset($data['title'])) {
-        $title = filter_var($data['title'], FILTER_SANITIZE_STRING);
-        if (strlen($title) < 3) {
-            throw new Exception('Title must be at least 3 characters', 400);
+    // Validate category_id if provided
+    if ($sanitizedData['category_id'] !== null) {
+        $stmt = $conn->prepare(CHECK_CATEGORY);
+        if (!$stmt) {
+            throw new Exception('Database error', 500);
             }
-        $updates[] = "title = ?";
-        $params[]  = $title;
-        $types .= 's';
-        }
-
-    if (isset($data['description'])) {
-        $description = filter_var($data['description'], FILTER_SANITIZE_STRING);
-        $updates[]   = "description = ?";
-        $params[]    = $description;
-        $types .= 's';
-        }
-
-    if (isset($data['price'])) {
-        $price = filter_var($data['price'], FILTER_SANITIZE_NUMBER_FLOAT, FILTER_FLAG_ALLOW_FRACTION);
-        if (!is_numeric($price) || $price < 0) {
-            throw new Exception('Price must be a positive number', 400);
+        $stmt->bind_param('i', $categoryId);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        if ($result->num_rows === 0) {
+            throw new Exception('Invalid category_id. Category does not exist.', 400);
             }
-        $updates[] = "price = ?";
-        $params[]  = (float) $price;
-        $types .= 'd';
+        $stmt->close();
         }
 
-    if (isset($data['images'])) {
-        if (!is_array($data['images'])) {
-            throw new Exception('Images must be an array', 400);
-            }
-        $images    = json_encode($data['images']);
-        $updates[] = "images = ?";
-        $params[]  = $images;
-        $types .= 's';
-        }
-
-    if (isset($data['location'])) {
-        $location  = filter_var($data['location'], FILTER_SANITIZE_STRING);
-        $updates[] = "location = ?";
-        $params[]  = $location;
-        $types .= 's';
-        }
-
-    if (isset($data['category_id'])) {
-        $category_id = filter_var($data['category_id'], FILTER_VALIDATE_INT);
-        if ($category_id === false || $category_id <= 0) {
-            throw new Exception('Invalid category ID', 400);
-            }
-        $updates[] = "category_id = ?";
-        $params[]  = $category_id;
-        $types .= 'i';
-        }
-
-    if (isset($data['item_condition'])) {
-        $item_condition = strtolower(filter_var($data['item_condition'], FILTER_SANITIZE_STRING));
-        if (!in_array($item_condition, ['new', 'used'])) {
-            throw new Exception('Item condition must be "new" or "used"', 400);
-            }
-        $updates[] = "item_condition = ?";
-        $params[]  = $item_condition;
-        $types .= 's';
-        }
-
-    if (isset($data['status'])) {
-        $status = strtolower(filter_var($data['status'], FILTER_SANITIZE_STRING));
-        if (!in_array($status, ['active', 'pending', 'sold'])) { // Exclude 'deleted' for safety
-            throw new Exception('Status must be "active", "pending", or "sold"', 400);
-            }
-        $updates[] = "status = ?";
-        $params[]  = $status;
-        $types .= 's';
-        }
-
-    // Ensure there’s something to update
-    if (empty($updates)) {
-        throw new Exception('No fields provided to update', 400);
-        }
-
-    // Build and execute query
-    $query    = "UPDATE ads SET " . implode(', ', $updates) . ", updated_at = NOW() WHERE id = ?";
-    $params[] = $ad_id;
-    $types .= 'i';
-
-    $stmt = $conn->prepare($query);
+    // Update ad
+    $stmt = $conn->prepare(UPDATE_AD);
     if (!$stmt) {
-        throw new Exception('Prepare failed: ' . $conn->error, 500);
-        }
-    $stmt->bind_param($types, ...$params);
-    if (!$stmt->execute()) {
-        throw new Exception('Execute failed: ' . $stmt->error, 500);
+        throw new Exception('Database error', 500);
         }
 
+    $stmt->bind_param(
+        'ssdsssissii',
+        $title,
+        $description,
+        $price,
+        $images,
+        $location,
+        $status,
+        $categoryId,
+        $itemCondition,
+        $isFeatured,
+        $adId,
+        $userId
+    );
+
+    if (!$stmt->execute()) {
+        throw new Exception('Failed to update ad', 500);
+        }
     if ($stmt->affected_rows === 0) {
-        throw new Exception('No changes made to the ad', 400);
+        throw new Exception('No changes made to the ad', 200);
         }
 
     $conn->commit();
-    sendResponse(['message' => 'Ad updated successfully'], 200);
-
+    error_log("Ad updated: ID=$adId, UserID=$userId");
+    sendResponse(['message' => 'Ad updated successfully']);
     }
 catch (Exception $e) {
     $conn->rollback();
-    error_log("Ad Update Error: " . $e->getMessage() . " | Ad ID: " . ($ad_id ?? 'unknown'));
-    sendResponse(['error' => $e->getMessage()], $e->getCode() ?: 400);
+    $code    = $e->getCode() ?: 400;
+    $message = $e->getMessage();
+
+    switch ($message) {
+        case 'Invalid JSON data':
+        case 'Invalid status. Must be "active", "pending", "sold", "deleted".':
+        case 'Invalid item_condition. Must be "new" or "used".':
+        case 'Invalid category_id. Category does not exist.':
+            $code = 400;
+            break;
+        case 'Ad not found or you do not have permission to update it':
+            $code = 404;
+            break;
+        case 'No changes made to the ad':
+            $code = 200; // Could be 400 if you want to enforce changes
+            break;
+        case 'Database error':
+        case 'Failed to update ad':
+            $message = 'Unable to update ad. Please try again.';
+            $code = 500;
+            break;
+        default:
+            $message = 'An unexpected error occurred.';
+            $code = 500;
+        }
+
+    error_log("Ad Update Error: " . $e->getMessage() . " | AdID: $adId, UserID: $userId");
+    sendResponse(['error' => $message], $code);
     } finally {
     if (isset($stmt)) {
         $stmt->close();

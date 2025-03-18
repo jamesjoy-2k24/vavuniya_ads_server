@@ -1,14 +1,25 @@
 USE vavuniya_ads;
 
--- Ads (Vavuniya-specific scenarios)
-INSERT INTO ads (title, description, price, images, location, status, user_id, category_id, item_condition, is_featured, created_at) VALUES
-('Used Laptop for Sale', 'Dell laptop, good for students', 45000.00, '["laptop1.jpg"]', 'Vavuniya Town', 'active', 1, 1, 'used', FALSE, '2025-03-01 08:00:00'),
-('Motorbike - Yamaha', 'Well-maintained bike, perfect for Vavuniya roads', 250000.00, '["bike1.jpg", "bike2.jpg"]', 'Pampaimadu, Vavuniya', 'active', 2, 2, 'used', TRUE, '2025-03-02 10:30:00'),
-('Wooden Table', 'Handmade table from local carpenter', 15000.00, '["table1.jpg"]', 'Nelukulam, Vavuniya', 'pending', 3, 3, 'new', FALSE, '2025-03-03 14:00:00'),
-('Tamil Novels Set', 'Collection of 5 novels', 2000.00, '["books1.jpg"]', 'Vavuniya Town', 'sold', 1, 4, 'used', FALSE, '2025-03-04 09:15:00'),
-('Tuition Classes', 'Maths tuition for O/L students', 1000.00, '[]', 'Kanagarayankulam, Vavuniya', 'active', 2, 5, 'new', FALSE, '2025-03-05 16:00:00'),
-('Broken Phone', 'Samsung phone, needs repair', 5000.00, '["phone1.jpg"]', 'Vavuniya Town', 'active', 3, 1, 'used', FALSE, '2025-03-06 11:00:00'),
-('Expensive Car', 'Toyota Corolla, luxury deal', 5000000.00, '["car1.jpg"]', 'Vavuniya Town', 'deleted', 1, 2, 'used', TRUE, '2025-03-07 13:45:00');
+INSERT INTO categories (id, name) VALUES (1, 'Electronics');
+
+-- CREATE TABLE login_attempts (
+--     id INT AUTO_INCREMENT PRIMARY KEY,
+--     phone VARCHAR(13) NOT NULL,
+--     ip_address VARCHAR(45) NOT NULL,
+--     status ENUM('success', 'failed') NOT NULL,
+--     created_at DATETIME DEFAULT NOW(),
+--     INDEX idx_phone (phone),
+--     INDEX idx_created_at (created_at)
+-- );
+
+-- CREATE TABLE IF NOT EXISTS pending_users (
+--     id INT AUTO_INCREMENT PRIMARY KEY,
+--     phone VARCHAR(13) UNIQUE NOT NULL,
+--     name VARCHAR(100) NOT NULL,
+--     password VARCHAR(255) NOT NULL,
+--     created_at DATETIME DEFAULT NOW(),
+--     INDEX idx_phone (phone)
+-- );
 
 -- ALTER TABLE ads ADD COLUMN is_verified BOOLEAN DEFAULT FALSE;
 
@@ -75,7 +86,7 @@ INSERT INTO ads (title, description, price, images, location, status, user_id, c
 --     title VARCHAR(255) NOT NULL,
 --     description TEXT NOT NULL,
 --     price DECIMAL(10,2) NOT NULL,
---     images JSON,
+--     images TEXT,
 --     location VARCHAR(255),
 --     status ENUM('active', 'pending', 'sold', 'deleted') DEFAULT 'pending',
 --     user_id INT,

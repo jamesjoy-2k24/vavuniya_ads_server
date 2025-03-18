@@ -1,81 +1,90 @@
 <?php
-require_once '../../config/database.php'; // Adjust path as needed
-require_once '../../includes/functions.php';
+require_once __DIR__ . '/../../config/database.php';
+require_once __DIR__ . '/../../includes/functions.php';
 
-header('Content-Type: application/json');
+header('Content-Type: application/json; charset=UTF-8');
 
-// Database connection
+const SOFT_DELETE_AD  = "UPDATE ads SET status = 'deleted' WHERE id = ? AND user_id = ? AND status != 'deleted'";
+const CHECK_AD_EXISTS = "SELECT status FROM ads WHERE id = ? AND user_id = ?";
+
+// User ID from JWT (set by router.php)
+$userId = $GLOBALS['user_id'];
+
 $conn = getDbConnection();
+$conn->begin_transaction();
 
 try {
-    // Extract and verify JWT
-    $token = null;
-    if (isset($_SERVER['HTTP_AUTHORIZATION'])) {
-        $token = $_SERVER['HTTP_AUTHORIZATION'];
-        }
-    elseif (isset($_SERVER['REDIRECT_HTTP_AUTHORIZATION'])) { // For CGI/FastCGI
-        $token = $_SERVER['REDIRECT_HTTP_AUTHORIZATION'];
-        }
-    elseif (function_exists('apache_request_headers')) { // Fallback for Apache
-        $headers = apache_request_headers();
-        $token   = $headers['Authorization'] ?? $headers['authorization'] ?? null;
-        }
-
-    if (!$token || !preg_match('/Bearer\s(\S+)/', $token, $matches)) {
-        throw new Exception('Authentication required', 401);
-        }
-
-    // Get user_id from JWT, not request body
-    $jwt_user_id = verifyJwt($matches[1]);
-
-    // Parse incoming JSON data
+    // Get and validate input
     $data = json_decode(file_get_contents('php://input'), true);
-    if (!$data || !isset($data['id'])) {
-        throw new Exception('Missing ad ID', 400);
+    if (!$data) {
+        throw new Exception('Invalid JSON data', 400);
         }
 
-    $ad_id = filter_var($data['id'], FILTER_VALIDATE_INT);
-    if ($ad_id === false || $ad_id <= 0) {
-        throw new Exception('Invalid ad ID', 400);
-        }
+    $requiredFields = ['id'];
+    $optionalFields = [];
+    $sanitizedData  = validateInput($data, $requiredFields, $optionalFields);
+    $adId           = (int) $sanitizedData['id'];
 
-    // Check ownership
-    $stmt = $conn->prepare("SELECT user_id FROM ads WHERE id = ? AND status != 'deleted'");
+    // Check if ad exists and isn’t already deleted
+    $stmt = $conn->prepare(CHECK_AD_EXISTS);
     if (!$stmt) {
-        throw new Exception('Database prepare failed: ' . $conn->error, 500);
+        throw new Exception('Database error', 500);
         }
-    $stmt->bind_param('i', $ad_id);
+    $stmt->bind_param('ii', $adId, $userId);
     $stmt->execute();
     $result = $stmt->get_result();
-    $ad     = $result->fetch_assoc();
-
-    if (!$ad) {
-        throw new Exception('Ad not found', 404);
+    if ($result->num_rows === 0) {
+        throw new Exception('Ad not found or you do not have permission to delete it', 404);
         }
-    if ($ad['user_id'] !== $jwt_user_id) {
-        throw new Exception('Unauthorized: You do not own this ad', 403);
+    $ad = $result->fetch_assoc();
+    if ($ad['status'] === 'deleted') {
+        throw new Exception('Ad is already deleted', 400);
         }
+    $stmt->close();
 
-    // Update ad status to 'deleted'
-    $stmt = $conn->prepare("UPDATE ads SET status = 'deleted' WHERE id = ?");
+    // Soft delete the ad
+    $stmt = $conn->prepare(SOFT_DELETE_AD);
     if (!$stmt) {
-        throw new Exception('Database prepare failed: ' . $conn->error, 500);
+        throw new Exception('Database error', 500);
         }
-    $stmt->bind_param('i', $ad_id);
+    $stmt->bind_param('ii', $adId, $userId);
     if (!$stmt->execute()) {
-        throw new Exception('Database execute failed: ' . $stmt->error, 500);
+        throw new Exception('Failed to delete ad', 500);
         }
-
     if ($stmt->affected_rows === 0) {
-        throw new Exception('No ad was deleted', 404);
+        throw new Exception('Ad not found or already deleted', 404);
         }
 
-    sendResponse(['message' => 'Ad deleted successfully'], 200);
-
+    $conn->commit();
+    error_log("Ad deleted (soft): ID=$adId, UserID=$userId");
+    sendResponse(['message' => 'Ad deleted successfully']);
     }
 catch (Exception $e) {
-    error_log("Ad Delete Error: " . $e->getMessage() . " | Ad ID: " . ($ad_id ?? 'unknown'));
-    sendResponse(['error' => $e->getMessage()], $e->getCode() ?: 400);
+    $conn->rollback();
+    $code    = $e->getCode() ?: 400;
+    $message = $e->getMessage();
+
+    switch ($message) {
+        case 'Invalid JSON data':
+        case 'Ad is already deleted':
+            $code = 400;
+            break;
+        case 'Ad not found or you do not have permission to delete it':
+        case 'Ad not found or already deleted':
+            $code = 404;
+            break;
+        case 'Database error':
+        case 'Failed to delete ad':
+            $message = 'Unable to delete ad. Please try again.';
+            $code = 500;
+            break;
+        default:
+            $message = 'An unexpected error occurred.';
+            $code = 500;
+        }
+
+    error_log("Ad Delete Error: " . $e->getMessage() . " | AdID: $adId, UserID: $userId");
+    sendResponse(['error' => $message], $code);
     } finally {
     if (isset($stmt)) {
         $stmt->close();

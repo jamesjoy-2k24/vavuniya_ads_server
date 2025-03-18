@@ -1,44 +1,63 @@
 <?php
-require_once 'config/database.php';
-require_once 'includes/functions.php';
+require_once __DIR__ . '/../../config/database.php';
+require_once __DIR__ . '/../../includes/functions.php';
 
-header('Content-Type: application/json');
+header('Content-Type: application/json; charset=UTF-8');
 
-// Database connection
+const SELECT_AD = "SELECT id, title, description, price, images, location, status, category_id, item_condition, is_featured, created_at, updated_at FROM ads WHERE id = ? AND status = 'active'";
+
 $conn = getDbConnection();
 
 try {
-    // Validate ad ID from GET parameter
-    $ad_id = isset($_GET['id']) ? (int) $_GET['id'] : null;
-    if ($ad_id === false || $ad_id <= 0) {
-        throw new Exception('Invalid ad ID', 400);
+    // Get ad ID from query parameter (e.g., /api/ads/show?id=1)
+    $adId = isset($_GET['id']) ? (int) $_GET['id'] : null;
+    if (!$adId || $adId <= 0) {
+        throw new Exception('Invalid or missing ad ID', 400);
         }
 
-    // Fetch ad details with is_favorite status
-    $stmt = $conn->prepare("SELECT a.id, a.title, a.price, a.images, a.location, a.item_condition, a.description, a.status, a.user_id, a.category_id, a.is_featured, a.created_at, a.updated_at, EXISTS(SELECT 1 FROM favorites f WHERE f.ad_id = a.id AND f.user_id = ?) AS is_favorite FROM ads a WHERE a.id = ? AND a.status != 'deleted'");
+    // Fetch ad
+    $stmt = $conn->prepare(SELECT_AD);
     if (!$stmt) {
-        throw new Exception('Prepare failed: ' . $conn->error, 500);
+        throw new Exception('Database error', 500);
         }
-    $stmt->bind_param('ii', $user_id, $ad_id);
-    if (!$stmt->execute()) {
-        throw new Exception('Execute failed: ' . $stmt->error, 500);
-        }
-    $ad = $stmt->get_result()->fetch_assoc();
+    $stmt->bind_param('i', $adId);
+    $stmt->execute();
+    $result = $stmt->get_result();
 
-    if (!$ad) {
-        throw new Exception('Ad not found', 404);
+    if ($result->num_rows === 0) {
+        throw new Exception('Ad not found or not active', 404);
         }
 
-    // Decode JSON images field
-    $ad['images'] = json_decode($ad['images'], true) ?: [];
+    $ad           = $result->fetch_assoc();
+    $ad['images'] = $ad['images'] ? json_decode($ad['images'], true) : [];
 
-    // sendResponse with ad details directly
-    sendResponse($ad, 200);
-
+    sendResponse([
+        'message' => 'Ad retrieved successfully',
+        'ad'      => $ad
+    ]);
     }
 catch (Exception $e) {
-    error_log("Ad Show Error: " . $e->getMessage() . " | Ad ID: " . ($ad_id ?? 'unknown'));
-    sendResponse(['error' => $e->getMessage()], $e->getCode() ?: 404);
+    $code    = $e->getCode() ?: 400;
+    $message = $e->getMessage();
+
+    switch ($message) {
+        case 'Invalid or missing ad ID':
+            $code = 400;
+            break;
+        case 'Ad not found or not active':
+            $code = 404;
+            break;
+        case 'Database error':
+            $message = 'Unable to retrieve ad. Please try again.';
+            $code = 500;
+            break;
+        default:
+            $message = 'An unexpected error occurred.';
+            $code = 500;
+        }
+
+    error_log("Ad Show Error: " . $e->getMessage() . " | AdID: " . ($adId ?? 'unknown'));
+    sendResponse(['error' => $message], $code);
     } finally {
     if (isset($stmt)) {
         $stmt->close();
