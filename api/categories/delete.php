@@ -27,11 +27,11 @@ try {
     if (!$stmt->execute())
         throw new Exception('Execute failed: ' . $stmt->error);
 
-    respond(['status' => 'success', 'message' => 'Category deleted']);
+    sendResponse(['status' => 'success', 'message' => 'Category deleted']);
     }
 catch (Exception $e) {
     error_log("Category Delete Error: " . $e->getMessage());
-    respond(['status' => 'error', 'message' => $e->getMessage()], 400);
+    sendResponse(['status' => 'error', 'message' => $e->getMessage()], 400);
     } finally {
     $conn->close();
     }

@@ -1,133 +1,145 @@
 <?php
-require_once 'config/database.php';
-require_once 'includes/functions.php';
+require_once __DIR__ . '/../../config/database.php';
+require_once __DIR__ . '/../../includes/functions.php';
 
-header('Content-Type: application/json');
+header('Content-Type: application/json; charset=UTF-8');
 
-// Database connection
+const SELECT_ADS        = "SELECT id, title, price, images, location, item_condition, description, status, user_id, category_id, is_featured, created_at, updated_at 
+                    FROM ads WHERE status = 'active'";
+const COUNT_ADS         = "SELECT COUNT(*) FROM ads WHERE status = 'active'";
+const SELECT_CATEGORIES = "SELECT name FROM categories ORDER BY name ASC";
+
 $conn = getDbConnection();
-$conn->begin_transaction();
 
 try {
-    // Get request data (POST only for consistency with HomeController)
-    $data        = json_decode(file_get_contents('php://input'), true) ?? [];
-    $category_id = isset($data['category_id']) ? filter_var($data['category_id'], FILTER_VALIDATE_INT) : null;
-    $search      = $data['search'] ?? null;
-    $page        = max(1, isset($data['page']) ? (int) $data['page'] : 1);
-    $limit       = min(50, max(1, isset($data['page_size']) ? (int) $data['page_size'] : 10)); // Match frontend 'page_size'
-    $offset      = ($page - 1) * $limit;
+    // Get request data (POST for consistency)
+    $data       = json_decode(file_get_contents('php://input'), true) ?? [];
+    $categoryId = isset($data['category_id']) ? filter_var($data['category_id'], FILTER_VALIDATE_INT) : null;
+    $search     = $data['search'] ?? null;
+    $page       = max(1, isset($data['page']) ? (int) $data['page'] : 1);
+    $limit      = min(50, max(1, isset($data['page_size']) ? (int) $data['page_size'] : 10));
+    $offset     = ($page - 1) * $limit;
 
-    if ($category_id === false || $category_id < 0) {
+    if ($categoryId === false || $categoryId < 0) {
         throw new Exception('Invalid category ID', 400);
         }
 
     // Build ads query
-    $query  = "SELECT id, title, price, images, location, item_condition, description, status, user_id, category_id, is_featured, created_at, updated_at 
-              FROM ads WHERE status = 'active'";
-    $params = [];
-    $types  = '';
+    $adsQuery = SELECT_ADS;
+    $params   = [];
+    $types    = '';
 
-    if ($category_id !== null) {
-        $query .= " AND category_id = ?";
-        $params[] = $category_id;
+    if ($categoryId !== null) {
+        $adsQuery .= " AND category_id = ?";
+        $params[] = $categoryId;
         $types .= 'i';
         }
     if ($search) {
-        $query .= " AND (title LIKE ? OR description LIKE ?)";
-        $search_param = "%$search%";
-        $params[]     = $search_param;
-        $params[]     = $search_param;
+        $adsQuery .= " AND (title LIKE ? OR description LIKE ?)";
+        $searchParam = "%$search%";
+        $params[]    = $searchParam;
+        $params[]    = $searchParam;
         $types .= 'ss';
         }
-
-    // Add pagination
-    $query .= " LIMIT ? OFFSET ?";
+    $adsQuery .= " LIMIT ? OFFSET ?";
     $params[] = $limit;
     $params[] = $offset;
     $types .= 'ii';
 
     // Execute ads query
-    $ads_stmt = $conn->prepare($query);
-    if (!$ads_stmt) {
-        throw new Exception('Prepare failed: ' . $conn->error, 500);
+    $adsStmt = $conn->prepare($adsQuery);
+    if (!$adsStmt) {
+        throw new Exception('Database error', 500);
         }
     if ($params) {
-        $ads_stmt->bind_param($types, ...$params);
+        $adsStmt->bind_param($types, ...$params);
         }
-    if (!$ads_stmt->execute()) {
-        throw new Exception('Execute failed: ' . $ads_stmt->error, 500);
-        }
-    $ads_result = $ads_stmt->get_result();
-    $ads        = $ads_result->fetch_all(MYSQLI_ASSOC);
+    $adsStmt->execute();
+    $adsResult = $adsStmt->get_result();
+    $ads       = $adsResult->fetch_all(MYSQLI_ASSOC);
 
-    // Decode JSON images field
+    // Decode images
     foreach ($ads as &$ad) {
-        $ad['images'] = json_decode($ad['images'], true) ?: [];
+        $ad['images'] = $ad['images'] ? json_decode($ad['images'], true) : [];
         }
-    unset($ad); // Clear reference
+    unset($ad);
 
-    // Get total count for pagination
-    $count_query  = "SELECT COUNT(*) FROM ads WHERE status = 'active'";
-    $count_params = [];
-    $count_types  = '';
-    if ($category_id !== null) {
-        $count_query .= " AND category_id = ?";
-        $count_params[] = $category_id;
-        $count_types .= 'i';
+    // Build count query
+    $countQuery  = COUNT_ADS;
+    $countParams = [];
+    $countTypes  = '';
+    if ($categoryId !== null) {
+        $countQuery .= " AND category_id = ?";
+        $countParams[] = $categoryId;
+        $countTypes .= 'i';
         }
     if ($search) {
-        $count_query .= " AND (title LIKE ? OR description LIKE ?)";
-        $count_params[] = $search_param;
-        $count_params[] = $search_param;
-        $count_types .= 'ss';
+        $countQuery .= " AND (title LIKE ? OR description LIKE ?)";
+        $countParams[] = $searchParam;
+        $countParams[] = $searchParam;
+        $countTypes .= 'ss';
         }
-    $count_stmt = $conn->prepare($count_query);
-    if (!$count_stmt) {
-        throw new Exception('Prepare failed: ' . $conn->error, 500);
+
+    // Execute count query
+    $countStmt = $conn->prepare($countQuery);
+    if (!$countStmt) {
+        throw new Exception('Database error', 500);
         }
-    if ($count_params) {
-        $count_stmt->bind_param($count_types, ...$count_params);
+    if ($countParams) {
+        $countStmt->bind_param($countTypes, ...$countParams);
         }
-    if (!$count_stmt->execute()) {
-        throw new Exception('Execute failed: ' . $count_stmt->error, 500);
-        }
-    $total = $count_stmt->get_result()->fetch_row()[0];
+    $countStmt->execute();
+    $total = $countStmt->get_result()->fetch_row()[0];
 
     // Fetch categories
-    $cat_stmt = $conn->prepare("SELECT name FROM categories");
-    if (!$cat_stmt) {
-        throw new Exception('Prepare failed: ' . $conn->error, 500);
+    $catStmt = $conn->prepare(SELECT_CATEGORIES);
+    if (!$catStmt) {
+        throw new Exception('Database error', 500);
         }
-    if (!$cat_stmt->execute()) {
-        throw new Exception('Execute failed: ' . $cat_stmt->error, 500);
-        }
-    $categories_result = $cat_stmt->get_result();
-    $categories        = array_column($categories_result->fetch_all(MYSQLI_ASSOC), 'name');
+    $catStmt->execute();
+    $categoriesResult = $catStmt->get_result();
+    $categories       = array_column($categoriesResult->fetch_all(MYSQLI_ASSOC), 'name');
 
-    // Commit transaction
-    $conn->commit();
-
-    // Build response matching HomeController expectations
-    sendResponse([
+    // Build response
+    $response = [
+        'message'    => 'Ads retrieved successfully',
         'ads'        => $ads,
         'categories' => $categories,
-        'has_more'   => count($ads) == $limit,
-        'page'       => $page,
-        'page_size'  => $limit,
-        'total'      => $total
-    ]);
+        'pagination' => [
+            'page'      => $page,
+            'page_size' => $limit,
+            'total'     => $total,
+            'has_more'  => ($page * $limit) < $total
+        ]
+    ];
 
+    sendResponse($response);
     }
 catch (Exception $e) {
-    $conn->rollback();
-    error_log("Ad List Error: " . $e->getMessage());
-    sendResponse(['error' => $e->getMessage()], $e->getCode() ?: 500);
+    $code    = $e->getCode() ?: 400;
+    $message = $e->getMessage();
+
+    switch ($message) {
+        case 'Invalid category ID':
+            $code = 400;
+            break;
+        case 'Database error':
+            $message = 'Unable to retrieve ads. Please try again.';
+            $code = 500;
+            break;
+        default:
+            $message = 'An unexpected error occurred.';
+            $code = 500;
+        }
+
+    error_log("Ad List Error: " . $e->getMessage() . " | CategoryID: " . ($categoryId ?? 'none') . " | Search: " . ($search ?? 'none'));
+    sendResponse(['error' => $message], $code);
     } finally {
-    if (isset($ads_stmt))
-        $ads_stmt->close();
-    if (isset($count_stmt))
-        $count_stmt->close();
-    if (isset($cat_stmt))
-        $cat_stmt->close();
+    if (isset($adsStmt))
+        $adsStmt->close();
+    if (isset($countStmt))
+        $countStmt->close();
+    if (isset($catStmt))
+        $catStmt->close();
     $conn->close();
     }
