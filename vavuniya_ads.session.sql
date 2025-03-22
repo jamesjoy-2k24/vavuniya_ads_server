@@ -1,6 +1,21 @@
 USE vavuniya_ads;
 
-INSERT INTO categories (id, name) VALUES (1, 'Electronics');
+-- INSERT INTO ads (title, description, price, images, location, status, user_id, category_id, item_condition) VALUES
+-- ('Laptop Dell XPS 13', 'Barely used, 16GB RAM, 512GB SSD', 120000.00, 'laptop.jpg', 'Vavuniya', 'active', 2, 1, 'used'),
+-- ('Toyota Corolla 2018', 'Good condition, low mileage', 4500000.00, 'corolla.jpg', 'Colombo', 'active', 2, 2, 'used'),
+-- ('Wooden Dining Table', '6-seater, solid wood', 35000.00, 'table.jpg', 'Vavuniya', 'active', 2, 3, 'new'),
+-- ('Leather Jacket', 'Black, size M, brand new', 7500.00, 'jacket.jpg', 'Kandy', 'active', 2, 4, 'new'),
+-- ('Pizza Oven', 'Commercial grade, slightly used', 150000.00, 'oven.jpg', 'Jaffna', 'active', 2, 5, 'used'),
+-- ('Treadmill', 'Foldable, excellent condition', 45000.00, 'treadmill.jpg', 'Vavuniya', 'active', 2, 6, 'used'),
+-- ('Face Mask Set', 'Hydrating masks, pack of 10', 2500.00, 'masks.jpg', 'Colombo', 'active', 2, 7, 'new');
+
+-- INSERT INTO favorites (user_id, ad_id) VALUES
+-- (3, 1), -- Laptop
+-- (3, 3), -- Dining Table
+-- (3, 5), -- Pizza Oven
+-- (3, 7); -- Face Masks
+
+
 
 -- CREATE TABLE login_attempts (
 --     id INT AUTO_INCREMENT PRIMARY KEY,
@@ -11,17 +26,6 @@ INSERT INTO categories (id, name) VALUES (1, 'Electronics');
 --     INDEX idx_phone (phone),
 --     INDEX idx_created_at (created_at)
 -- );
-
--- CREATE TABLE IF NOT EXISTS pending_users (
---     id INT AUTO_INCREMENT PRIMARY KEY,
---     phone VARCHAR(13) UNIQUE NOT NULL,
---     name VARCHAR(100) NOT NULL,
---     password VARCHAR(255) NOT NULL,
---     created_at DATETIME DEFAULT NOW(),
---     INDEX idx_phone (phone)
--- );
-
--- ALTER TABLE ads ADD COLUMN is_verified BOOLEAN DEFAULT FALSE;
 
 -- -- Users Table
 -- CREATE TABLE IF NOT EXISTS users (

@@ -8,6 +8,7 @@ const SELECT_MY_ADS = "SELECT id, title, description, price, images, location, s
 
 // User ID from JWT (set by router.php)
 $userId = $GLOBALS['user_id'];
+echo $userId;
 
 $conn = getDbConnection();
 

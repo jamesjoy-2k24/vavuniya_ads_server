@@ -7,7 +7,7 @@ if (!isset($_ENV['JWT_SECRET'])) {
 
 // Configuration constants
 define('JWT_SECRET', $_ENV['JWT_SECRET'] ?? 'vavuniya_ads_2025'); // Secret key for JWT tokens
-define('OTP_RATE_LIMIT', (int) ($_ENV['OTP_RATE_LIMIT'] ?? 5));    // Max OTP requests per window
+define('OTP_RATE_LIMIT', (int) ($_ENV['OTP_RATE_LIMIT'] ?? 10));    // Max OTP requests per window
 define('OTP_RATE_WINDOW', (int) ($_ENV['OTP_RATE_WINDOW'] ?? 5 * 60)); // Window in seconds (15 minutes)
 define('LOGIN_RATE_LIMIT', 5);    // 5 attempts
 define('LOGIN_RATE_WINDOW', 900); // 15 minutes

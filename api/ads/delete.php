@@ -15,11 +15,7 @@ $conn->begin_transaction();
 
 try {
     // Get and validate input
-    $data = json_decode(file_get_contents('php://input'), true);
-    if (!$data) {
-        throw new Exception('Invalid JSON data', 400);
-        }
-
+    $data           = getInputData();
     $requiredFields = ['id'];
     $optionalFields = [];
     $sanitizedData  = validateInput($data, $requiredFields, $optionalFields);

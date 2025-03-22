@@ -99,13 +99,14 @@ function sanitizeField($value, $field)
     }
 
 // Generate JWT (using firebase/php-jwt)
-function generateJwt($userId)
+function generateJwt($userId, $role)
     {
     require_once __DIR__ . '/../config/config.php';
     $payload = [
-        'iat' => time(),
-        'exp' => time() + 3600, // 1 hour
-        'sub' => $userId
+        'iat'  => time(),
+        'exp'  => time() + 3600, // 1 hour
+        'sub'  => $userId,
+        'role' => $role
     ];
     return JWT::encode($payload, JWT_SECRET, 'HS256');
     }
@@ -116,13 +117,16 @@ function verifyJwt($token)
     require_once __DIR__ . '/../config/config.php';
     try {
         $decoded = JWT::decode($token, new Key(JWT_SECRET, 'HS256'));
-        return $decoded->sub;
+        $userId  = $decoded->user_id;
+        $role    = $decoded->role ?? 'user';
+        return ['id' => $userId, 'role' => $role];
         }
     catch (Exception $e) {
-        error_log("JWT Error: " . $e->getMessage());
-        sendResponse(['error' => 'Invalid or expired token'], 401);
+        error_log("JWT Verify Error: " . $e->getMessage());
+        return false;
         }
     }
+
 // Get Auth Header
 function getAuthorizationHeader(): ?string
     {
@@ -150,4 +154,17 @@ function getInputData(): array
         return $data;
         }
     return json_decode(file_get_contents('php://input'), true) ?? [];
+    }
+
+// Check Authentication and Role
+function checkAuthAndRole($requiredRole = 'user')
+    {
+    if (!isset($GLOBALS['user_id']) || !$GLOBALS['user_id']) {
+        sendResponse(['error' => 'Authentication required'], 401);
+        }
+    $userId = $GLOBALS['user_id'];
+
+    if ($requiredRole === 'admin' && (!isset($GLOBALS['user_role']) || $GLOBALS['user_role'] !== 'admin')) {
+        sendResponse(['error' => 'Admin access required'], 403);
+        }
     }

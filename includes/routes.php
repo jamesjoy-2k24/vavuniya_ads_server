@@ -8,18 +8,21 @@ function getRoutes()
     // Routes
     $routes = [
         'auth'       => [
-            'login'      => ['POST', $baseEndpointDir . 'auth/login.php'],
-            'send_otp'   => ['POST', $baseEndpointDir . 'auth/send_otp.php'],
-            'register'   => ['POST', $baseEndpointDir . 'auth/register.php'],
-            'verify_otp' => ['POST', $baseEndpointDir . 'auth/verify_otp.php'],
+            'login'       => ['POST', $baseEndpointDir . 'auth/login.php'],
+            'send_otp'    => ['POST', $baseEndpointDir . 'auth/send_otp.php'],
+            'register'    => ['POST', $baseEndpointDir . 'auth/register.php'],
+            'verify_otp'  => ['POST', $baseEndpointDir . 'auth/verify_otp.php'],
+            'user_exists' => ['POST', $baseEndpointDir . 'auth/user_exists.php'],
         ],
         'ads'        => [
-            'list'   => ['GET', $baseEndpointDir . 'ads/list.php'],
-            'show'   => ['GET', $baseEndpointDir . 'ads/show.php'],
-            'create' => ['POST', $baseEndpointDir . 'ads/create.php'],
-            'update' => ['PUT', $baseEndpointDir . 'ads/update.php'],
-            'delete' => ['DELETE', $baseEndpointDir . 'ads/delete.php'],
-            'my_ads' => ['GET', $baseEndpointDir . 'ads/my_ads.php'],
+            'list'        => ['GET', $baseEndpointDir . 'ads/list.php'],
+            'show'        => ['GET', $baseEndpointDir . 'ads/show.php'],
+            'create'      => ['POST', $baseEndpointDir . 'ads/create.php'],
+            'update'      => ['PUT', $baseEndpointDir . 'ads/update.php'],
+            'delete'      => ['DELETE', $baseEndpointDir . 'ads/delete.php'],
+            'my_ads'      => ['GET', $baseEndpointDir . 'ads/my_ads.php'],
+            'search'      => ['GET', $baseEndpointDir . 'ads/search.php'],
+            'suggestions' => ['GET', $baseEndpointDir . 'ads/suggestions.php'],
         ],
         'categories' => [
             'list'   => ['GET', $baseEndpointDir . 'categories/list.php'],
@@ -27,6 +30,11 @@ function getRoutes()
             'create' => ['POST', $baseEndpointDir . 'categories/create.php'],
             'update' => ['PUT', $baseEndpointDir . 'categories/update.php'],
             'delete' => ['DELETE', $baseEndpointDir . 'categories/delete.php'],
+        ],
+        'favorites'  => [
+            'list'   => ['GET', $baseEndpointDir . 'favorites/list.php'],
+            'add'    => ['POST', $baseEndpointDir . 'favorites/add.php'],
+            'remove' => ['DELETE', $baseEndpointDir . 'favorites/remove.php'],
         ],
     ];
 

@@ -1,21 +1,20 @@
 <?php
-// api/auth/login.php
 require_once __DIR__ . '/../../config/database.php';
 require_once __DIR__ . '/../../includes/functions.php';
 require_once __DIR__ . '/../../includes/security.php';
+use Firebase\JWT\JWT;
 
 header('Content-Type: application/json; charset=UTF-8');
 
 // SQL Queries
-const SELECT_USER           = "SELECT id, password FROM users WHERE phone = ?";
+const SELECT_USER           = "SELECT id, password, role FROM users WHERE phone = ?";
 const INSERT_LOGIN_ATTEMPT  = "INSERT INTO login_attempts (phone, ip_address, status) VALUES (?, ?, ?)";
 const SELECT_LOGIN_ATTEMPTS = "SELECT COUNT(*) as attempts FROM login_attempts WHERE phone = ? AND created_at > NOW() - INTERVAL ? SECOND";
 
 try {
     // Get and validate input
-    $data = json_decode(file_get_contents('php://input'), true);
-    $data = validateInput($data, ['phone', 'password']);
-
+    $data     = getInputData();
+    $data     = validateInput($data, ['phone', 'password']);
     $phone    = $data['phone'];
     $password = $data['password'];
     $ip       = $_SERVER['REMOTE_ADDR'] ?? 'unknown';
@@ -64,18 +63,27 @@ try {
 
     // Successful login
     logLoginAttempt($conn, $phone, $ip, 'success');
-    $token = generateJwt($user['id']);
+    $payload = [
+        'user_id' => $user['id'],
+        'role'    => $user['role'] ?? 'user',
+        'iat'     => time(),
+        'exp'     => time() + (24 * 60 * 60)
+    ];
+    $token   = JWT::encode($payload, JWT_SECRET, 'HS256');
 
     $conn->commit();
-    error_log("User logged in: Phone={$phone}, UserID={$user['id']}");
-    sendResponse(['message' => 'Login successful', 'token' => $token]);
-
+    error_log("User logged in: Phone={$phone}, UserID={$user['id']}, Role=" . ($user['role'] ?? 'user'));
+    sendResponse(['message' => "Login Successful", 'token' => $token]);
     }
 catch (Exception $e) {
-    $conn->rollback();
+    if (isset($conn)) {
+        $conn->rollback();
+        }
     handleError($e, $phone);
     } finally {
-    $conn->close();
+    if (isset($conn)) {
+        $conn->close();
+        }
     }
 
 /**

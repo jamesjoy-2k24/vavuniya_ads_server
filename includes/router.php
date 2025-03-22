@@ -48,28 +48,36 @@ function handleRequest($url, $method)
         }
 
     $protectedRoutes = [
-        'ads/create' => true,
-        'ads/update' => true,
-        'ads/delete' => true,
-        'ads/my_ads' => true,
+        'ads/create'        => true,
+        'ads/update'        => true,
+        'ads/delete'        => true,
+        'ads/my_ads'        => true,
+        'categories/create' => true,
+        'categories/update' => true,
+        'categories/delete' => true,
+        'favorites/add'     => true,
+        'favorites/remove'  => true,
+        'favorites/list'    => true,
     ];
 
+    $routeKey = "$resource/$action";
     if (isset($protectedRoutes[$routeKey])) {
         $authHeader = getAuthorizationHeader();
         if (!$authHeader || !preg_match('/Bearer\s(\S+)/', $authHeader, $matches)) {
             sendResponse(['error' => 'Authorization token required'], 401);
             }
-        $token  = $matches[1];
-        $userId = verifyJwt($token);
-        if (!$userId) {
+        $token    = $matches[1];
+        $userData = verifyJwt($token);
+        if (!$userData) {
             sendResponse(['error' => 'Invalid or expired token'], 401);
             }
-        $GLOBALS['user_id'] = $userId;
+        $GLOBALS['user_id']   = $userData['id'];
+        $GLOBALS['user_role'] = $userData['role'];
         }
 
     $otpRoutes = ['auth/send_otp', 'auth/verify_otp'];
     if (in_array($routeKey, $otpRoutes)) {
-        $data  = json_decode(file_get_contents('php://input'), true) ?? [];
+        $data  = getInputData();
         $phone = $data['phone'] ?? '';
         if (empty($phone)) {
             sendResponse(['error' => 'Phone number required for OTP request'], 400);

@@ -10,7 +10,7 @@ const SELECT_USER = "SELECT id FROM users WHERE phone = ?";
 const INSERT_USER = "INSERT INTO users (phone, name, password) VALUES (?, ?, ?)";
 
 // Get and validate input
-$data     = json_decode(file_get_contents('php://input'), true);
+$data     = getInputData();
 $data     = validateInput($data, ['phone', 'name', 'password']);
 $phone    = $data['phone'];
 $name     = $data['name'];
@@ -45,7 +45,8 @@ try {
         }
 
     $userId = $conn->insert_id;
-    $jwt    = generateJwt($userId); // Generate JWT on registration
+    $role   = 'user'; // Default role
+    $jwt    = generateJwt($userId, $role);
 
     $conn->commit();
     error_log("User registered: Phone=$phone, Name=$name, ID=$userId");

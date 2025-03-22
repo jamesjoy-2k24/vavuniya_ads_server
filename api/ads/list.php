@@ -4,16 +4,15 @@ require_once __DIR__ . '/../../includes/functions.php';
 
 header('Content-Type: application/json; charset=UTF-8');
 
-const SELECT_ADS        = "SELECT id, title, price, images, location, item_condition, description, status, user_id, category_id, is_featured, created_at, updated_at 
-                    FROM ads WHERE status = 'active'";
 const COUNT_ADS         = "SELECT COUNT(*) FROM ads WHERE status = 'active'";
-const SELECT_CATEGORIES = "SELECT name FROM categories ORDER BY name ASC";
+const SELECT_CATEGORIES = "SELECT id FROM categories WHERE parent_id = ? OR id = ?";
+const SELECT_ADS        = "SELECT id, title, price, images, location, item_condition, description, status, user_id, category_id, is_featured, created_at, updated_at FROM ads WHERE status = 'active'";
 
 $conn = getDbConnection();
 
 try {
     // Get request data (POST for consistency)
-    $data       = json_decode(file_get_contents('php://input'), true) ?? [];
+    $data       = getInputData();
     $categoryId = isset($data['category_id']) ? filter_var($data['category_id'], FILTER_VALIDATE_INT) : null;
     $search     = $data['search'] ?? null;
     $page       = max(1, isset($data['page']) ? (int) $data['page'] : 1);
@@ -91,15 +90,25 @@ try {
     $countStmt->execute();
     $total = $countStmt->get_result()->fetch_row()[0];
 
-    // Fetch categories
-    $catStmt = $conn->prepare(SELECT_CATEGORIES);
-    if (!$catStmt) {
-        throw new Exception('Database error', 500);
-        }
-    $catStmt->execute();
-    $categoriesResult = $catStmt->get_result();
-    $categories       = array_column($categoriesResult->fetch_all(MYSQLI_ASSOC), 'name');
+    if ($categoryId !== null) {
+        // Fetch subcategory IDs
+        $subCatStmt = $conn->prepare(SELECT_CATEGORIES);
+        if (!$subCatStmt) {
+            throw new Exception('Database error', 500);
+            }
+        $subCatStmt->bind_param('ii', $categoryId, $categoryId);
+        $subCatStmt->execute();
+        $subCatResult = $subCatStmt->get_result();
+        $subCatIds    = array_column($subCatResult->fetch_all(MYSQLI_ASSOC), 'id');
+        $subCatStmt->close();
 
+        // Use IN clause for category filter
+        $placeholders = implode(',', array_fill(0, count($subCatIds), '?'));
+        $adsQuery .= " AND category_id IN ($placeholders)";
+        $countQuery .= " AND category_id IN ($placeholders)";
+        $params       = array_merge($params, $subCatIds);
+        $types .= str_repeat('i', count($subCatIds));
+        }
     // Build response
     $response = [
         'message'    => 'Ads retrieved successfully',

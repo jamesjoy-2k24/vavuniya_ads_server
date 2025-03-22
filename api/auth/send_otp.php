@@ -9,7 +9,7 @@ const INSERT_OTP         = "INSERT INTO otp (phone, code, expires_at) VALUES (?,
 const UPDATE_OTP_ATTEMPT = "UPDATE otp_attempts SET status = ? WHERE phone = ? AND ip_address = ? AND status = 'pending' ORDER BY created_at DESC LIMIT 1";
 
 // Get and validate input
-$data  = json_decode(file_get_contents('php://input'), true);
+$data  = getInputData();
 $data  = validateInput($data, ['phone']);
 $phone = $data['phone'];
 
