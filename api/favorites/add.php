@@ -11,6 +11,13 @@ $userId = $GLOBALS['user_id'];
 $conn   = getDbConnection();
 
 try {
+    $adId = isset($_GET['id']) ? (int) $_GET['id'] : (isset($_POST['ad_id']) ? (int) $_POST['ad_id'] : null);
+
+    if (!$adId || $adId <= 0) {
+        throw new Exception('Invalid or missing ad ID', 400);
+        }
+
+    // Prepare SQL statement
     $stmt = $conn->prepare(INSERT_FAVORITE);
     if (!$stmt) {
         throw new Exception('Database error', 500);

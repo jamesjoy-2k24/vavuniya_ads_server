@@ -58,6 +58,8 @@ function handleRequest($url, $method)
         'favorites/add'     => true,
         'favorites/remove'  => true,
         'favorites/list'    => true,
+        'users/me'        => true,
+        'users/my_ads'        => true,
     ];
 
     $routeKey = "$resource/$action";

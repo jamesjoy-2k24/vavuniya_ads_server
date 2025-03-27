@@ -5,7 +5,7 @@ require_once __DIR__ . '/../../includes/security.php';
 
 header('Content-Type: application/json; charset=UTF-8');
 
-const SELECT_FAVORITES = "SELECT f.ad_id, a.title, a.description, a.price FROM favorites f JOIN ads a ON f.ad_id = a.id WHERE f.user_id = ?";
+const SELECT_FAVORITES = "SELECT f.ad_id, a.title, a.description, a.location, a.category_id, c.name AS category_name, a.price FROM favorites f JOIN ads a ON f.ad_id = a.id JOIN categories c ON a.category_id = c.id WHERE f.user_id = ?";
 
 $userId = $GLOBALS['user_id'];
 

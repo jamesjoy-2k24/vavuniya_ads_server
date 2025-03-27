@@ -5,14 +5,14 @@ require_once __DIR__ . '/../../includes/functions.php';
 header('Content-Type: application/json; charset=UTF-8');
 
 const COUNT_ADS         = "SELECT COUNT(*) FROM ads WHERE status = 'active'";
-const SELECT_CATEGORIES = "SELECT id FROM categories WHERE parent_id = ? OR id = ?";
+const SELECT_CATEGORIES = "SELECT id, name FROM categories WHERE parent_id = ? OR id = ?";
 const SELECT_ADS        = "SELECT id, title, price, images, location, item_condition, description, status, user_id, category_id, is_featured, created_at, updated_at FROM ads WHERE status = 'active'";
 
 $conn = getDbConnection();
 
 try {
-    // Get request data (POST for consistency)
-    $data       = getInputData();
+    // Get request data (use GET for simplicity, adjust if POST is required)
+    $data       = $_GET; // Switch to getInputData() if still using POST
     $categoryId = isset($data['category_id']) ? filter_var($data['category_id'], FILTER_VALIDATE_INT) : null;
     $search     = $data['search'] ?? null;
     $page       = max(1, isset($data['page']) ? (int) $data['page'] : 1);
@@ -22,6 +22,16 @@ try {
     if ($categoryId === false || $categoryId < 0) {
         throw new Exception('Invalid category ID', 400);
         }
+
+    // Fetch all categories for mapping
+    $catStmt = $conn->prepare("SELECT id, name FROM categories");
+    $catStmt->execute();
+    $catResult     = $catStmt->get_result();
+    $categoriesMap = [];
+    while ($row = $catResult->fetch_assoc()) {
+        $categoriesMap[$row['id']] = $row['name'];
+        }
+    $catStmt->close();
 
     // Build ads query
     $adsQuery = SELECT_ADS;
@@ -40,7 +50,7 @@ try {
         $params[]    = $searchParam;
         $types .= 'ss';
         }
-    $adsQuery .= " LIMIT ? OFFSET ?";
+    $adsQuery .= " ORDER BY created_at DESC LIMIT ? OFFSET ?";
     $params[] = $limit;
     $params[] = $offset;
     $types .= 'ii';
@@ -57,9 +67,11 @@ try {
     $adsResult = $adsStmt->get_result();
     $ads       = $adsResult->fetch_all(MYSQLI_ASSOC);
 
-    // Decode images
+    // Process images and add category name
     foreach ($ads as &$ad) {
-        $ad['images'] = $ad['images'] ? json_decode($ad['images'], true) : [];
+        // If images is a plain string (not JSON), use it directly
+        $ad['images']        = $ad['images'] ?: null; // Keep as string, no JSON decode
+        $ad['category_name'] = $categoriesMap[$ad['category_id']] ?? 'Uncategorized';
         }
     unset($ad);
 
@@ -90,30 +102,10 @@ try {
     $countStmt->execute();
     $total = $countStmt->get_result()->fetch_row()[0];
 
-    if ($categoryId !== null) {
-        // Fetch subcategory IDs
-        $subCatStmt = $conn->prepare(SELECT_CATEGORIES);
-        if (!$subCatStmt) {
-            throw new Exception('Database error', 500);
-            }
-        $subCatStmt->bind_param('ii', $categoryId, $categoryId);
-        $subCatStmt->execute();
-        $subCatResult = $subCatStmt->get_result();
-        $subCatIds    = array_column($subCatResult->fetch_all(MYSQLI_ASSOC), 'id');
-        $subCatStmt->close();
-
-        // Use IN clause for category filter
-        $placeholders = implode(',', array_fill(0, count($subCatIds), '?'));
-        $adsQuery .= " AND category_id IN ($placeholders)";
-        $countQuery .= " AND category_id IN ($placeholders)";
-        $params       = array_merge($params, $subCatIds);
-        $types .= str_repeat('i', count($subCatIds));
-        }
     // Build response
     $response = [
         'message'    => 'Ads retrieved successfully',
         'ads'        => $ads,
-        'categories' => $categories,
         'pagination' => [
             'page'      => $page,
             'page_size' => $limit,

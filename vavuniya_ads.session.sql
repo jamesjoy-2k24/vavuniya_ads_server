@@ -1,4 +1,6 @@
 USE vavuniya_ads;
+DESCRIBE favorites;
+
 
 -- INSERT INTO ads (title, description, price, images, location, status, user_id, category_id, item_condition) VALUES
 -- ('Laptop Dell XPS 13', 'Barely used, 16GB RAM, 512GB SSD', 120000.00, 'laptop.jpg', 'Vavuniya', 'active', 2, 1, 'used'),

@@ -36,6 +36,10 @@ function getRoutes()
             'add'    => ['POST', $baseEndpointDir . 'favorites/add.php'],
             'remove' => ['DELETE', $baseEndpointDir . 'favorites/remove.php'],
         ],
+        'users'      => [
+            'me'     => ['GET', $baseEndpointDir . 'users/show.php'],
+            'my_ads' => ['GET', $baseEndpointDir . 'users/my_ads.php'],
+        ],
     ];
 
     // Validate routes during definition

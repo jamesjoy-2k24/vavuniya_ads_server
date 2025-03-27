@@ -5,10 +5,6 @@ require_once __DIR__ . '/../../includes/security.php';
 
 header('Content-Type: application/json; charset=UTF-8');
 
-// Validate JWT
-$userId = $GLOBALS['user_id'];
-
-
 $conn = getDbConnection();
 try {
     // Input parameters with validation
