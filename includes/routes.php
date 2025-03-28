@@ -36,9 +36,12 @@ function getRoutes()
             'add'    => ['POST', $baseEndpointDir . 'favorites/add.php'],
             'remove' => ['DELETE', $baseEndpointDir . 'favorites/remove.php'],
         ],
-        'users'      => [
-            'me'     => ['GET', $baseEndpointDir . 'users/show.php'],
-            'my_ads' => ['GET', $baseEndpointDir . 'users/my_ads.php'],
+        'user'       => [
+            'me'          => ['GET', $baseEndpointDir . 'users/show.php'],
+            'my_ads'      => ['GET', $baseEndpointDir . 'users/my_ads.php'],
+            'update_ads'  => ['PUT', $baseEndpointDir . 'users/update_ads.php'],
+            'delete_ads'  => ['DELETE', $baseEndpointDir . 'users/delete_ads.php'],
+            'undo_delete' => ['PUT', $baseEndpointDir . 'users/undo_delete.php'],
         ],
     ];
 

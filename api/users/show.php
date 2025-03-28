@@ -10,12 +10,13 @@ const SELECT_USER     = "SELECT id, name, phone, created_at, role FROM users WHE
 const MESSAGES_COUNT  = "SELECT COUNT(*) as messagesCount FROM messages WHERE sender_id = ?";
 const FAVORITES_COUNT = "SELECT COUNT(*) as favoritesCount FROM favorites WHERE user_id = ?";
 
-$userId = $GLOBALS['user_id'];
-
-$conn = getDbConnection();
-$conn->begin_transaction();
 
 try {
+    $userId = $GLOBALS['user_id'];
+
+    $conn = getDbConnection();
+    $conn->begin_transaction();
+    
     // Fetch user details
     $userStmt = $conn->prepare(SELECT_USER);
     if (!$userStmt) {

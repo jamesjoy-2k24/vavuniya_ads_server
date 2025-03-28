@@ -114,7 +114,6 @@ try {
         }
 
     $conn->commit();
-    error_log("Ad updated: ID=$adId, UserID=$userId");
     sendResponse(['message' => 'Ad updated successfully']);
     }
 catch (Exception $e) {
@@ -133,7 +132,7 @@ catch (Exception $e) {
             $code = 404;
             break;
         case 'No changes made to the ad':
-            $code = 200; // Could be 400 if you want to enforce changes
+            $code = 200;
             break;
         case 'Database error':
         case 'Failed to update ad':

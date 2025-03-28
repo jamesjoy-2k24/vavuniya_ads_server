@@ -5,7 +5,7 @@ require_once __DIR__ . '/../../config/database.php';
 header('Content-Type: application/json; charset=UTF-8');
 header('Access-Control-Allow-Origin: *');
 
-const SELECT_ADS = "SELECT id, title, description, images FROM ads WHERE user_id = ? LIMIT 20";
+const SELECT_ADS = "SELECT id, title, description, images, status FROM ads WHERE user_id = ? ORDER BY created_at DESC LIMIT 20";
 
 $userId = $GLOBALS['user_id'];
 
@@ -27,7 +27,8 @@ try {
             'id'          => $row['id'],
             'title'       => $row['title'] ?? 'Untitled',
             'description' => $row['description'] ?? 'No description',
-            'imageUrl'    => $row['image'] ?? null,
+            'imageUrl'    => $row['image_url'] ?? null,
+            'is_deleted'  => $row['status'] === 'deleted' ? 1 : 0,
         ];
         }
 
