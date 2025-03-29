@@ -1,6 +1,6 @@
 USE vavuniya_ads;
 
-ALTER TABLE ads ADD COLUMN is_deleted TINYINT(1) NOT NULL DEFAULT 0;
+ALTER TABLE ads ADD COLUMN negotiable TINYINT(1) NOT NULL DEFAULT 0;
 
 -- CREATE TABLE login_attempts (
 --     id INT AUTO_INCREMENT PRIMARY KEY,

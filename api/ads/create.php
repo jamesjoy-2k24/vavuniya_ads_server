@@ -4,7 +4,7 @@ require_once __DIR__ . '/../../includes/functions.php';
 
 header('Content-Type: application/json; charset=UTF-8');
 
-const INSERT_AD      = "INSERT INTO ads (title, description, price, images, location, status, user_id, category_id, item_condition, is_featured) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+const INSERT_AD      = "INSERT INTO ads (title, description, price, images, location, status, user_id, category_id, item_condition, is_featured, negotiable) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
 const CHECK_CATEGORY = "SELECT id FROM categories WHERE id = ?";
 
 // User ID from JWT (set by router.php)
@@ -21,7 +21,8 @@ try {
         'images'      => [],
         'location'    => null,
         'category_id' => null,
-        'is_featured' => false
+        'is_featured' => false,
+        'negotiable'  => false,
     ];
 
     $sanitizedData = validateInput($data, $requiredFields, $optionalFields);
@@ -36,6 +37,7 @@ try {
     $categoryId    = $sanitizedData['category_id'] ? (int) $sanitizedData['category_id'] : null;
     $itemCondition = $sanitizedData['item_condition'];
     $isFeatured    = (bool) $sanitizedData['is_featured'];
+    $negotiable    = (bool) $sanitizedData['negotiable'];
 
     // Validate item_condition
     if (!in_array($itemCondition, ['new', 'used'])) {
@@ -64,7 +66,7 @@ try {
         }
 
     $stmt->bind_param(
-        'ssdsssiiss',
+        'ssdsssiissi',
         $title,
         $description,
         $price,
@@ -74,7 +76,8 @@ try {
         $userId,
         $categoryId,
         $itemCondition,
-        $isFeatured
+        $isFeatured,
+        $negotiable
     );
 
     if (!$stmt->execute()) {
