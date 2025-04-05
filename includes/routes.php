@@ -45,6 +45,11 @@ function getRoutes()
             'password'    => ['PUT', $baseEndpointDir . 'users/password.php'],
             'update_user' => ['PUT', $baseEndpointDir . 'users/update_user.php'],
         ],
+        'admin'      => [
+            'manage_ads' => ['GET', $baseEndpointDir . 'admin/manage-ads.php'],
+            'approve_ad' => ['PUT', $baseEndpointDir . 'admin/approve-ad.php'],
+            'reject_ad'  => ['PUT', $baseEndpointDir . 'admin/reject-ad.php'],
+        ],
     ];
 
     // Validate routes during definition

@@ -1,7 +1,5 @@
 USE vavuniya_ads;
 
-ALTER TABLE ads ADD COLUMN negotiable TINYINT(1) NOT NULL DEFAULT 0;
-
 -- CREATE TABLE login_attempts (
 --     id INT AUTO_INCREMENT PRIMARY KEY,
 --     phone VARCHAR(13) NOT NULL,
@@ -12,7 +10,7 @@ ALTER TABLE ads ADD COLUMN negotiable TINYINT(1) NOT NULL DEFAULT 0;
 --     INDEX idx_created_at (created_at)
 -- );
 
--- -- Users Table
+-- -- Users Table 
 -- CREATE TABLE IF NOT EXISTS users (
 --     id INT AUTO_INCREMENT PRIMARY KEY,
 --     name VARCHAR(255) NOT NULL,

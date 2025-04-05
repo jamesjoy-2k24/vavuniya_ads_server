@@ -65,6 +65,9 @@ function handleRequest($url, $method)
         'user/undo_delete'  => true,
         'user/password'     => true,
         'user/update_user'  => true,
+        'admin/manage_ads'  => true,
+        'admin/approve_ad'  => true,
+        'admin/reject_ad'   => true,
     ];
 
     $routeKey = "$resource/$action";
